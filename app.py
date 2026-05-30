@@ -75,7 +75,7 @@ def bloomin__set_upsteam_on():
     data = request.get_json()
 
     now_utc = datetime.now(timezone.utc)
-    future_utc = now_utc + timedelta(minutes=1)
+    future_utc = now_utc + timedelta(minutes=60)
 
     payload = {
         'upstream_on':  data['enabled'],
