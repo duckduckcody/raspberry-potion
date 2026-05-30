@@ -7,6 +7,7 @@ import random
 import os
 import json
 
+VERSION = "1.1"
 BLOOMIN8_IP = "192.168.1.104"
 CACHE_FILE = "gallery_cache.json"
 
@@ -31,10 +32,6 @@ def fetch_full_gallery(gallery_name):
         
         batch = data.get('data', [])
         all_images.extend(batch)
-
-        print('more!?')
-        print(data)
-        print(data.get('more', False))
         
         has_more = data.get('more', False)
         
@@ -47,7 +44,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return render_template('ascii-render.html')
+    return render_template('ascii-render.html', version=VERSION)
 
 @app.route("/api/bloomin/device_info")
 def bloomin__device_info():
@@ -134,11 +131,18 @@ def eink_pull():
 
     # 4. Pick a random winner
     random_image = random.choice(full_list)
-    
+
+    now_utc = datetime.now(timezone.utc)
+    future_utc = now_utc + timedelta(minutes=60)
+
     return jsonify({
-        "selection": random_image,
-        "total_images": len(full_list),
-        "cached": not force_refresh and full_list is not None
+        "status": 200,
+        "type": "SHOW",
+        "message": "Image retrieved successfully",
+        "data": {
+            "next_cron_time": future_utc.isoformat(),
+            "image_url": "http://192.168.1.104/gallerys/default/" + random_image
+        }
     })
 
 
