@@ -63,14 +63,13 @@ def bloomin__get_pull_config():
     device_time = datetime.fromtimestamp(json['time'])
     next_time = datetime.fromtimestamp(json['next_cron_time'])
 
-    print(json)
-
     return jsonify({
         'upstream_on': json['upstream_on'],
         'upstream_url': json['upstream_url'],
         'device_time': device_time.isoformat(),
         'next_time': next_time.isoformat(),
-        'time_until_next': f"{(next_time - device_time).total_seconds()}s"
+        'seconds_until_next': f"{int((next_time - device_time).total_seconds())} seconds",
+        'minutes_until_next': f"{int((next_time - device_time).total_seconds() / 60)} mins"
     }), 200
 
 @app.route("/api/bloomin/pull_config/set_upstream", methods=['PUT'])
