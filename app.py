@@ -141,7 +141,7 @@ def eink_pull():
         "message": "Image retrieved successfully",
         "data": {
             "next_cron_time": future_utc.isoformat(),
-            "image_url": "http://192.168.1.104/gallerys/default/" + random_image
+            "image_url": f"http://192.168.1.104/gallerys/default/{random_image['name']}"
         }
     })
 
