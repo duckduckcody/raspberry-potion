@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request, Response
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import requests
 import urllib.parse
 import random
@@ -58,7 +59,19 @@ def bloomin__device_info():
 def bloomin__get_pull_config():
     response = requests.get('http://192.168.1.104/upstream/pull_settings')
     json = response.json()
-    return jsonify(json), 200
+
+    device_time = datetime.fromtimestamp(json['time'])
+    next_time = datetime.fromtimestamp(json['next_cron_time'])
+
+    print(json)
+
+    return jsonify({
+        'upstream_on': json['upstream_on'],
+        'upstream_url': json['upstream_url'],
+        'device_time': device_time.isoformat(),
+        'next_time': next_time.isoformat(),
+        'time_until_next': f"{(next_time - device_time).total_seconds()}s"
+    }), 200
 
 @app.route("/api/bloomin/pull_config/set_upstream", methods=['PUT'])
 def bloomin__set_pull_config():
