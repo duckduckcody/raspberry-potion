@@ -7,7 +7,7 @@ import random
 import os
 import json
 
-VERSION = "1.1"
+VERSION = "1.2"
 BLOOMIN8_IP = "192.168.1.104"
 CACHE_FILE = "gallery_cache.json"
 
@@ -95,7 +95,7 @@ def bloomin__set_upsteam_on():
 
 @app.route("/eink_pull")
 def eink_pull():
-    gallery_name = request.args.get('gallery', 'default')
+    gallery_name = request.args.get('gallery', 'upstream')
     force_refresh = request.args.get('force', 'false').lower() == 'true'
     
     full_list = None
