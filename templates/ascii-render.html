@@ -1,0 +1,261 @@
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='ascii-styles.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="app-container" id="app-container">
+      <div class="ascii-container">
+        <pre id="ascii-frame" class="ascii-art"></pre>
+      </div>
+      <div class="terminal-container">
+        <pre class="terminal-output" id="terminal-output"></pre>
+
+        <div class="terminal-input-container">
+          <span class="terminal-arrow">❯</span>
+          <input
+            type="text"
+            id="terminal-input"
+            name="terminal-input"
+            class="terminal-input"
+            autofocus
+          />
+        </div>
+      </div>
+      <!-- meta data row, inverted colors, current cli, current mode, connected status -->
+      <div class="meta-data-container">
+        <span>cli:<span id="metadata-cli">HOME</span></span>
+        <span>mode:<span id="metadata-mode">COMMAND</span></span>
+        <span>version: 1.0</span>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='ascii-animation.js') }}"></script>
+    <script>
+      const appContainer = document.getElementById("app-container");
+      const terminalInputElement = document.getElementById("terminal-input");
+      const terminalOutputElement = document.getElementById("terminal-output");
+      const metadataCliElement = document.getElementById("metadata-cli");
+      const metadataModeElement = document.getElementById("metadata-mode");
+
+      const apiClient = {
+        get: async (url) => {
+          const response = await fetch(url);
+          const object = await response.json();
+          return JSON.stringify(object, null, 2);
+        },
+      };
+
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      const reRenderOutputs = () => {
+        terminalOutputElement.innerHTML = outputs.join("<br/>");
+        terminalOutputElement.scrollTop = terminalOutputElement.scrollHeight;
+      };
+
+      const reRenderMetaData = () => {
+        metadataCliElement.innerHTML = currentCLI.toUpperCase();
+        metadataModeElement.innerHTML = currentMode.toUpperCase();
+      };
+
+      const newOutput = (output, userGenerated = false) => {
+        if (typeof output === "object") {
+          output.map((o) => outputs.push(o));
+        } else {
+          outputs.push(userGenerated ? `❯ ${output}` : output);
+        }
+
+        reRenderOutputs();
+      };
+
+      const rePrintCommandList = () => {
+        newOutput("");
+        if (currentCLI === "home") {
+          newOutput(homeOutputs);
+        } else if (currentCLI === "bloomin") {
+          newOutput(bloominOutputs);
+        }
+      };
+
+      const unknownCommand = (input) => {
+        newOutput(`Unknown command: ${input}`);
+        rePrintCommandList();
+      };
+
+      const setCurrentCli = (cli) => {
+        currentCLI = cli;
+        reRenderMetaData();
+      };
+
+      const setCurrentMode = (mode) => {
+        currentMode = mode;
+        reRenderMetaData();
+      };
+
+      const clearOutputs = () => {
+        outputs = [];
+        reRenderOutputs();
+      };
+
+      const clearInput = () => {
+        terminalInputElement.value = "";
+      };
+
+      const getInput = () => terminalInputElement.value;
+
+      let currentCLI = "home";
+      let currentMode = "command";
+      let outputs = [];
+      const homeOutputs = ["Welcome to raspberry potion", "1 - bloomin frame"];
+      const bloominOutputs = [
+        "bloomin frame CLI loaded...",
+        "1 - frame status",
+        "2 - get pull config",
+        "3 - set pull config upsteam url",
+        "4 - enable/disable pull config",
+        "5 - test eink_pull endpoint",
+        "6 - force eink pull cache reset",
+      ];
+      outputs = [...homeOutputs];
+
+      appContainer.addEventListener("click", async () => {
+        terminalInputElement.focus();
+      });
+
+      terminalInputElement.addEventListener("keydown", async (event) => {
+        if (
+          event.key === "c" &&
+          event.ctrlKey === true &&
+          currentMode !== "command"
+        ) {
+          newOutput("switching back to command...");
+          setCurrentMode("command");
+        }
+
+        if (event.key === "Enter") {
+          const input = getInput();
+          newOutput(input, true);
+          clearInput();
+
+          if (input === "back" || input === "home") {
+            newOutput(homeOutputs);
+            setCurrentCli("home");
+            return;
+          }
+
+          if (input === "h" || input === "help" || input === "commands") {
+            newOutput(homeOutputs);
+            return;
+          }
+
+          if (input === "c" || input === "clear") {
+            clearOutputs();
+            return;
+          }
+
+          if (currentCLI === "home") {
+            switch (input) {
+              case "1":
+                newOutput(bloominOutputs);
+                setCurrentCli("bloomin");
+                break;
+              default:
+                unknownCommand(input);
+            }
+
+            return;
+          }
+
+          if (currentCLI === "bloomin" && currentMode === "command") {
+            switch (input) {
+              case "1":
+                newOutput("getting device info...");
+                const deviceInfo = await apiClient.get(
+                  "/api/bloomin/device_info",
+                );
+                newOutput(deviceInfo);
+                break;
+              case "2":
+                newOutput("getting pull config...");
+                const pullConfig = await apiClient.get(
+                  "/api/bloomin/get_pull_config",
+                );
+                newOutput(pullConfig);
+                break;
+              case "3":
+                newOutput("setting pull config upstream url...");
+                setCurrentMode("pull_config__upstream_url");
+                newOutput("what is the upstream_url?");
+                break;
+              case "4":
+                newOutput("enable [E/e] / disable [D/d] pull config");
+                setCurrentMode("pull_config__enable_disable");
+                newOutput("what is the upstream_url?");
+                break;
+              case "5":
+                newOutput("hitting eink_pull");
+                const einkResponse = await apiClient.get("/eink_pull");
+                newOutput(einkResponse);
+                break;
+              case "6":
+                newOutput("resetting eink pull cache");
+                const einkCacheResetResponse = await apiClient.get(
+                  "/eink_pull?force=true",
+                );
+                newOutput(einkResponse);
+                break;
+              default:
+                unknownCommand(input);
+            }
+            return;
+          }
+
+          if (
+            currentCLI === "bloomin" &&
+            currentMode === "pull_config__upstream_url"
+          ) {
+            await fetch("/api/bloomin/pull_config/set_upstream", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ upstream_url: input }),
+            });
+            setCurrentMode("command");
+          }
+
+          if (
+            currentCLI === "bloomin" &&
+            currentMode === "pull_config__enable_disable"
+          ) {
+            await fetch("/api/bloomin/pull_config/set_upstream_on", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                enabled: input === "e" || input === "E" ? true : false,
+              }),
+            });
+            setCurrentMode("command");
+          }
+        }
+
+        reRenderOutputs();
+      });
+
+      reRenderOutputs();
+      (async () => {
+        while (true) {
+          for (const frame of ASCII_FRAMES) {
+            document.querySelector("#ascii-frame").innerHTML = frame;
+            await sleep(66);
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
