@@ -37,11 +37,14 @@ def set_upstream():
 def set_upstream_on():
     data = request.get_json()
     future_utc = datetime.now(timezone.utc) + timedelta(minutes=60)
-    payload = {'upstream_on': data['enabled'], 'cron_time': future_utc.isoformat()}
+    payload = {'upstream_on': 'False', 'cron_time': future_utc.isoformat()}
     requests.put(f'http://{BLOOMIN8_IP}/upstream/pull_settings', json=payload)
     return Response(status=200)
 
 @bloomin_bp.route("/wake_frame", methods=['PUT'])
 def wake_frame_route():
-    frame_status = asyncio.run(wake_frame())
-    return jsonify(frame_status), 200
+    try:
+        frame_status = asyncio.run(wake_frame())
+        return jsonify(frame_status), 200
+    except (FileNotFoundError):
+        return jsonify({'status': 'yeah it just died i dunno'}), 200

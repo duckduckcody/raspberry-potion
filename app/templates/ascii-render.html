@@ -47,6 +47,14 @@
           const object = await response.json();
           return JSON.stringify(object, null, 2);
         },
+        put: async (url, payload) => {
+          const response = await fetch(url, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          });
+          const object = await response.json();
+          return JSON.stringify(object, null, 2);
+        },
       };
 
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
