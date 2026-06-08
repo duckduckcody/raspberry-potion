@@ -116,8 +116,7 @@
         "2 - get pull config",
         "3 - set pull config upsteam url",
         "4 - enable/disable pull config",
-        "5 - test eink_pull endpoint",
-        "6 - force eink pull cache reset",
+        "5 - wake frame",
       ];
       outputs = [...homeOutputs];
 
@@ -193,19 +192,13 @@
               case "4":
                 newOutput("enable [E/e] / disable [D/d] pull config");
                 setCurrentMode("pull_config__enable_disable");
-                newOutput("what is the upstream_url?");
                 break;
               case "5":
-                newOutput("hitting eink_pull");
-                const einkResponse = await apiClient.get("/eink_pull");
-                newOutput(einkResponse);
-                break;
-              case "6":
-                newOutput("resetting eink pull cache");
-                const einkCacheResetResponse = await apiClient.get(
-                  "/eink_pull?force=true",
+                newOutput("waking frame...");
+                const frameWakeResponse = await apiClient.put(
+                  "/api/bloomin/wake_frame",
                 );
-                newOutput(einkResponse);
+                newOutput(frameWakeResponse);
                 break;
               default:
                 unknownCommand(input);
